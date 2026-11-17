@@ -55,6 +55,10 @@ jobs:
       - name: Build Snap
         run: |
           sudo snap install snapcraft --classic
+          # Rust-плагин Snapcraft ставит rustup как build-snap. Этот snap
+          # распространяется только с classic-подключением, поэтому ставим
+          # его заранее: иначе установка из build-snap окружения падает.
+          sudo snap install rustup --classic
           snapcraft pack --destructive-mode
           mv openrun_*.snap dist/
 
