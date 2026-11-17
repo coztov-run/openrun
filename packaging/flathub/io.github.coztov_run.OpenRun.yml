@@ -1,16 +1,16 @@
 # Шаблон для Flathub.
 #
-# 1. Создайте репозиторий https://github.com/coztov-run/openrun
-#    (или замените app-id, URL и имя иконки на свой GitHub-аккаунт).
-# 2. Поставьте тег v0.1.0 и узнайте commit:
+# 1. Репозиторий: https://github.com/coztov-run/openrun
+#    Тег v0.1.0 указывает на коммит, вписанный ниже.
+# 2. Проверьте commit тега:
 #      git rev-parse v0.1.0
-# 3. Впишите commit ниже вместо REPLACE_WITH_COMMIT_SHA.
-# 4. Проверьте сборку:
+# 3. Проверьте сборку:
 #      flatpak-builder --user --install-deps-from=flathub \
 #        --repo=repo --force-clean build-dir \
 #        packaging/flathub/io.github.coztov_run.OpenRun.yml
-# 5. Форкните https://github.com/flathub/io.github.coztov_run.OpenRun,
-#    положите этот файл в корень и откройте Pull Request.
+# 4. Форкните https://github.com/flathub/flathub (ветка new-pr),
+#    положите этот файл, cargo-sources.json и flathub.json в корень
+#    и откройте Pull Request в new-pr. Вручную, не автоматически.
 #
 # В Flathub источник должен быть воспроизводимым: type: dir не принимается.
 app-id: io.github.coztov_run.OpenRun
@@ -54,5 +54,5 @@ modules:
       - type: git
         url: https://github.com/coztov-run/openrun.git
         tag: v0.1.0
-        commit: 8e39e722d0e823a661435c34a1c7f20be3727e09
+        commit: 3c232ac3cfea052f8b4361e93ea348c0bc61a81e
       - cargo-sources.json

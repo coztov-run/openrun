@@ -35,7 +35,7 @@ AI-агентам создавать submission PR и писать за него
    ```
 
 3. В `packaging/flathub/io.github.coztov_run.OpenRun.yml` уже указан commit
-   `8e39e722d0e823a661435c34a1c7f20be3727e09` для тега `v0.1.0`. Если тег
+   `3c232ac3cfea052f8b4361e93ea348c0bc61a81e` для тега `v0.1.0`. Если тег
    пересобран, замените его на новый `git rev-parse v0.1.0`.
 4. `cargo-sources.json` уже лежит в корне репозитория. Он содержит архивы
    всех crates и нужен для сборки без сети. При изменении `Cargo.lock`
