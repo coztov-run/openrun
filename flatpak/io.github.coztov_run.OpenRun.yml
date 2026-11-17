@@ -21,6 +21,8 @@ finish-args:
   - --socket=pulseaudio
   - --device=dri
   # Файлы, открытые двойным кликом, и доступ к загрузкам.
+  - --filesystem=home
+  - --filesystem=removable-media
   - --filesystem=xdg-download
   # Ярлыки OpenRun/Windows-программ должны попадать в настоящее меню и на стол.
   - --filesystem=xdg-data/applications:create
