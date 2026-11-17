@@ -14,7 +14,7 @@ description: |
 
 base: core24
 grade: stable
-confinement: classic
+confinement: strict
 license: GPL-3.0-or-later
 icon: snap/gui/openrun.png
 contact: https://github.com/coztov-run/openrun/issues
