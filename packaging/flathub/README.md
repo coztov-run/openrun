@@ -28,14 +28,15 @@ AI-агентам создавать submission PR и писать за него
    опубликован, а тег `v0.1.0` указывает на нужный коммит. Идентификатор
    приложения `io.github.coztov_run.OpenRun` подразумевает владельца
    `coztov-run` (в app-id — `coztov_run`) и репозиторий `openrun`.
-2. Получите commit тега:
+2. Проверьте commit тега:
 
    ```bash
    git rev-parse v0.1.0
    ```
 
-3. В `packaging/flathub/io.github.coztov_run.OpenRun.yml` замените
-   `REPLACE_WITH_COMMIT_SHA` на этот commit.
+3. В `packaging/flathub/io.github.coztov_run.OpenRun.yml` уже указан commit
+   `8e39e722d0e823a661435c34a1c7f20be3727e09` для тега `v0.1.0`. Если тег
+   пересобран, замените его на новый `git rev-parse v0.1.0`.
 4. `cargo-sources.json` уже лежит в корне репозитория. Он содержит архивы
    всех crates и нужен для сборки без сети. При изменении `Cargo.lock`
    пересоберите его:
