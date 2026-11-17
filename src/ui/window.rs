@@ -6,12 +6,13 @@ use std::path::{Path, PathBuf};
 use std::rc::Rc;
 
 use adw::prelude::*;
-use gtk4 as gtk;
 use gtk::{gdk, gio, glib};
+use gtk4 as gtk;
 use libadwaita as adw;
 
 use crate::core::config::{AppEntry, Config, Theme};
 use crate::core::deb;
+use crate::core::flatpak;
 use crate::core::i18n::{self, t, Lang};
 use crate::core::prefix::Prefix;
 use crate::core::runner;
@@ -80,6 +81,8 @@ struct State {
     stack: gtk::Stack,
     deb_group: adw::PreferencesGroup,
     deb_rows: RefCell<Vec<adw::ActionRow>>,
+    flatpak_group: adw::PreferencesGroup,
+    flatpak_rows: RefCell<Vec<adw::ActionRow>>,
     runtime_toast: RefCell<Option<adw::Toast>>,
     runtime_busy: Cell<bool>,
 }
@@ -100,7 +103,10 @@ impl State {
 
     fn save(&self) {
         if let Err(e) = self.config.borrow().save() {
-            self.toast(&format!("{}: {e}", t("Не удалось сохранить настройки", "Failed to save settings")));
+            self.toast(&format!(
+                "{}: {e}",
+                t("Не удалось сохранить настройки", "Failed to save settings")
+            ));
         }
     }
 }
@@ -259,10 +265,7 @@ fn launch_by_name(st: &Shared, name: &str) {
 
     match prefix {
         Some(prefix) => launch(st, prefix, vec![app.exe]),
-        None => st.toast(t(
-            "Сначала создайте префикс",
-            "Create a prefix first",
-        )),
+        None => st.toast(t("Сначала создайте префикс", "Create a prefix first")),
     }
 }
 
@@ -283,6 +286,7 @@ fn build_window(app: &adw::Application, files: Vec<PathBuf>) -> adw::Application
 fn page_title(id: &str) -> &'static str {
     match id {
         "deb" => t("Пакеты .deb", ".deb packages"),
+        "flatpak" => t("Пакеты .flatpak", ".flatpak packages"),
         "settings" => t("Настройки", "Settings"),
         _ => t("Префиксы", "Prefixes"),
     }
@@ -346,6 +350,19 @@ fn fill_window(
     let deb_page = adw::PreferencesPage::new();
     deb_page.add(&deb_zone_group);
     deb_page.add(&deb_group);
+
+    // ---- Страница: .flatpak ----
+    let flatpak_zone = drop_zone(Some(t("Перетащите .flatpak", "Drop .flatpak here")));
+    let flatpak_zone_group = adw::PreferencesGroup::new();
+    flatpak_zone_group.add(&flatpak_zone);
+
+    let flatpak_group = adw::PreferencesGroup::builder()
+        .title(t("Установленные Flatpak", "Installed Flatpaks"))
+        .build();
+
+    let flatpak_page = adw::PreferencesPage::new();
+    flatpak_page.add(&flatpak_zone_group);
+    flatpak_page.add(&flatpak_group);
 
     // ---- Страница: настройки ----
     let theme_row = adw::ActionRow::builder().title(t("Тема", "Theme")).build();
@@ -411,6 +428,11 @@ fn fill_window(
     let stack = gtk::Stack::new();
     stack.add_titled(&prefix_page, Some("prefixes"), t("Префиксы", "Prefixes"));
     stack.add_titled(&deb_page, Some("deb"), t("Пакеты .deb", ".deb packages"));
+    stack.add_titled(
+        &flatpak_page,
+        Some("flatpak"),
+        t("Пакеты .flatpak", ".flatpak packages"),
+    );
     stack.add_titled(&settings_page, Some("settings"), t("Настройки", "Settings"));
 
     // ---- Боковая панель (компактная, как в Files) ----
@@ -418,9 +440,26 @@ fn fill_window(
     list.add_css_class("navigation-sidebar");
     list.set_selection_mode(gtk::SelectionMode::Single);
     let rows = [
-        sidebar_row(("prefixes", t("Префиксы", "Prefixes"), "drive-harddisk-symbolic")),
-        sidebar_row(("deb", t("Пакеты .deb", ".deb packages"), "folder-download-symbolic")),
-        sidebar_row(("settings", t("Настройки", "Settings"), "emblem-system-symbolic")),
+        sidebar_row((
+            "prefixes",
+            t("Префиксы", "Prefixes"),
+            "drive-harddisk-symbolic",
+        )),
+        sidebar_row((
+            "deb",
+            t("Пакеты .deb", ".deb packages"),
+            "folder-download-symbolic",
+        )),
+        sidebar_row((
+            "flatpak",
+            t("Пакеты .flatpak", ".flatpak packages"),
+            "package-x-generic-symbolic",
+        )),
+        sidebar_row((
+            "settings",
+            t("Настройки", "Settings"),
+            "emblem-system-symbolic",
+        )),
     ];
     for row in &rows {
         list.append(row);
@@ -498,6 +537,8 @@ fn fill_window(
         stack: stack.clone(),
         deb_group,
         deb_rows: RefCell::new(Vec::new()),
+        flatpak_group,
+        flatpak_rows: RefCell::new(Vec::new()),
         runtime_toast: RefCell::new(None),
         runtime_busy: Cell::new(false),
     });
@@ -508,13 +549,18 @@ fn fill_window(
         choose_file(
             &st,
             t("Выберите программу", "Choose a program"),
-            t("Windows-программы (.exe, .msi)", "Windows programs (.exe, .msi)"),
+            t(
+                "Windows-программы (.exe, .msi)",
+                "Windows programs (.exe, .msi)",
+            ),
             &["exe", "msi"],
             |st, path| handle_exe_paths(st, vec![path]),
         );
     });
     let st = state.clone();
-    attach_drop(&prefix_page, &exe_zone, move |paths| handle_exe_paths(&st, paths));
+    attach_drop(&prefix_page, &exe_zone, move |paths| {
+        handle_exe_paths(&st, paths)
+    });
 
     // .deb: клик по «+» и перетаскивание как на саму зону, так и на всю страницу .deb
     let st = state.clone();
@@ -528,7 +574,25 @@ fn fill_window(
         );
     });
     let st = state.clone();
-    attach_drop(&deb_page, &deb_zone, move |paths| handle_deb_paths(&st, paths));
+    attach_drop(&deb_page, &deb_zone, move |paths| {
+        handle_deb_paths(&st, paths)
+    });
+
+    // .flatpak: установка бандла через системный flatpak.
+    let st = state.clone();
+    flatpak_zone.connect_clicked(move |_| {
+        choose_file(
+            &st,
+            t("Выберите Flatpak-пакет", "Choose a Flatpak bundle"),
+            t("Пакеты Flatpak (.flatpak)", "Flatpak bundles (.flatpak)"),
+            &["flatpak"],
+            |st, path| handle_flatpak_paths(st, vec![path]),
+        );
+    });
+    let st = state.clone();
+    attach_drop(&flatpak_page, &flatpak_zone, move |paths| {
+        handle_flatpak_paths(&st, paths)
+    });
 
     let st = state.clone();
     new_prefix_btn.connect_clicked(move |_| add_prefix_dialog(&st));
@@ -571,7 +635,11 @@ fn fill_window(
     // Смена языка пересобирает интерфейс.
     let st = state.clone();
     lang_dd.connect_selected_notify(move |dd| {
-        let lang = if dd.selected() == 1 { Lang::En } else { Lang::Ru };
+        let lang = if dd.selected() == 1 {
+            Lang::En
+        } else {
+            Lang::Ru
+        };
         if i18n::current() == lang {
             return;
         }
@@ -593,6 +661,7 @@ fn fill_window(
     refresh_prefixes(&state);
     refresh_apps(&state);
     refresh_deb_list(&state);
+    refresh_flatpak_list(&state);
 
     // При первом запуске OpenRun скачивается сам — ничего не нужно ставить в систему.
     if first_run && !runtime::is_bundled_ready() {
@@ -602,7 +671,10 @@ fn fill_window(
     if let Err(e) = shortcut::create_self_shortcut() {
         state.toast(&format!(
             "{}: {e}",
-            t("Не удалось создать ярлык приложения", "Failed to create app shortcut")
+            t(
+                "Не удалось создать ярлык приложения",
+                "Failed to create app shortcut"
+            )
         ));
     }
 
@@ -634,24 +706,30 @@ fn has_ext(path: &Path, exts: &[&str]) -> bool {
 /// Обрабатывает файлы, открытые двойным кликом в файловом менеджере.
 fn handle_paths(st: &Shared, paths: Vec<PathBuf>) {
     let mut debs = Vec::new();
+    let mut flatpaks = Vec::new();
     let mut windows = Vec::new();
     for path in paths {
         if has_ext(&path, &["deb"]) {
             debs.push(path);
+        } else if has_ext(&path, &["flatpak"]) {
+            flatpaks.push(path);
         } else if has_ext(&path, &["exe", "msi"]) {
             windows.push(path);
         }
     }
 
-    if debs.is_empty() && windows.is_empty() {
+    if debs.is_empty() && flatpaks.is_empty() && windows.is_empty() {
         st.toast(t(
-            "Откройте файл .exe, .msi или .deb",
-            "Open an .exe, .msi, or .deb file",
+            "Откройте файл .exe, .msi, .deb или .flatpak",
+            "Open an .exe, .msi, .deb, or .flatpak file",
         ));
         return;
     }
     if !debs.is_empty() {
         handle_deb_paths(st, debs);
+    }
+    if !flatpaks.is_empty() {
+        handle_flatpak_paths(st, flatpaks);
     }
     if !windows.is_empty() {
         handle_exe_paths(st, windows);
@@ -741,7 +819,10 @@ fn refresh_prefixes(st: &Shared) {
 
         let run_btn = icon_button(
             "media-playback-start-symbolic",
-            t("Запустить .exe в этом префиксе", "Run an .exe in this prefix"),
+            t(
+                "Запустить .exe в этом префиксе",
+                "Run an .exe in this prefix",
+            ),
         );
         let cfg_btn = icon_button(
             "emblem-system-symbolic",
@@ -749,7 +830,10 @@ fn refresh_prefixes(st: &Shared) {
         );
         let del_btn = icon_button(
             "user-trash-symbolic",
-            t("Убрать из списка (файлы останутся)", "Remove from list (files are kept)"),
+            t(
+                "Убрать из списка (файлы останутся)",
+                "Remove from list (files are kept)",
+            ),
         );
 
         let (s1, s2, s3) = (st.clone(), st.clone(), st.clone());
@@ -809,7 +893,10 @@ fn refresh_apps(st: &Shared) {
         );
         let del_btn = icon_button(
             "user-trash-symbolic",
-            t("Убрать из списка и удалить ярлык", "Remove from list and delete shortcut"),
+            t(
+                "Убрать из списка и удалить ярлык",
+                "Remove from list and delete shortcut",
+            ),
         );
 
         let s2 = st.clone();
@@ -869,10 +956,7 @@ fn refresh_deb_list(st: &Shared) {
                 st2.toast(&format!("{}: {pkg}", t("Удалено", "Deleted")));
                 refresh_deb_list(&st2);
             }
-            Err(e) => st2.toast(&format!(
-                "{}: {e}",
-                t("Ошибка удаления", "Delete failed")
-            )),
+            Err(e) => st2.toast(&format!("{}: {e}", t("Ошибка удаления", "Delete failed"))),
         });
         if deb::has_launcher(&name) {
             let run_btn = icon_button(
@@ -894,6 +978,80 @@ fn refresh_deb_list(st: &Shared) {
         row.add_suffix(&del_btn);
         st.deb_group.add(&row);
         st.deb_rows.borrow_mut().push(row);
+    }
+}
+
+fn refresh_flatpak_list(st: &Shared) {
+    let old: Vec<adw::ActionRow> = st.flatpak_rows.borrow_mut().drain(..).collect();
+    for row in &old {
+        st.flatpak_group.remove(row);
+    }
+
+    if !flatpak::available() {
+        let row = adw::ActionRow::builder()
+            .title(t("Flatpak не найден", "Flatpak is not installed"))
+            .subtitle(t(
+                "Установите flatpak, чтобы открывать .flatpak-бандлы",
+                "Install flatpak to open .flatpak bundles",
+            ))
+            .build();
+        st.flatpak_group.add(&row);
+        st.flatpak_rows.borrow_mut().push(row);
+        return;
+    }
+
+    let apps = flatpak::list_installed();
+    if apps.is_empty() {
+        let row = adw::ActionRow::builder()
+            .title(t(
+                "Установленных Flatpak пока нет",
+                "No installed Flatpaks yet",
+            ))
+            .build();
+        st.flatpak_group.add(&row);
+        st.flatpak_rows.borrow_mut().push(row);
+        return;
+    }
+
+    for app in apps {
+        let row = adw::ActionRow::builder()
+            .title(app.name.as_str())
+            .subtitle(app.id.as_str())
+            .build();
+
+        let run_btn = icon_button(
+            "media-playback-start-symbolic",
+            t("Запустить Flatpak", "Run Flatpak"),
+        );
+        let st2 = st.clone();
+        let id = app.id.clone();
+        run_btn.connect_clicked(move |_| {
+            if let Err(e) = flatpak::launch(&id) {
+                st2.toast(&format!(
+                    "{}: {e}",
+                    t("Не удалось запустить", "Failed to run")
+                ));
+            }
+        });
+
+        let del_btn = icon_button(
+            "user-trash-symbolic",
+            t("Удалить Flatpak и ярлык", "Remove Flatpak and shortcut"),
+        );
+        let st3 = st.clone();
+        let id = app.id.clone();
+        del_btn.connect_clicked(move |_| match flatpak::uninstall(&id) {
+            Ok(()) => {
+                st3.toast(&format!("{}: {id}", t("Удалено", "Removed")));
+                refresh_flatpak_list(&st3);
+            }
+            Err(e) => st3.toast(&format!("{}: {e}", t("Ошибка удаления", "Removal failed"))),
+        });
+
+        row.add_suffix(&run_btn);
+        row.add_suffix(&del_btn);
+        st.flatpak_group.add(&row);
+        st.flatpak_rows.borrow_mut().push(row);
     }
 }
 
@@ -951,16 +1109,16 @@ fn start_runtime_install(st: &Shared) {
                     set_runtime_toast(&st, &text);
                 }
                 RuntimeMsg::Progress(runtime::Progress::Extract) => {
-                    set_runtime_toast(
-                        &st,
-                        t("Распаковываю OpenRun…", "Extracting OpenRun…"),
-                    );
+                    set_runtime_toast(&st, t("Распаковываю OpenRun…", "Extracting OpenRun…"));
                 }
                 RuntimeMsg::Finished(Some(err)) => {
                     if let Some(toast) = st.runtime_toast.borrow().as_ref() {
                         toast.set_title(&format!(
                             "{}: {err}",
-                            t("Не удалось подготовить OpenRun", "Failed to prepare OpenRun")
+                            t(
+                                "Не удалось подготовить OpenRun",
+                                "Failed to prepare OpenRun"
+                            )
                         ));
                         toast.set_timeout(5);
                     }
@@ -1054,7 +1212,10 @@ fn handle_exe_paths(st: &Shared, paths: Vec<PathBuf>) {
         .filter(|p| has_ext(p, &["exe", "msi"]))
         .collect();
     if exes.is_empty() {
-        st.toast(t("Нужен файл .exe или .msi", "An .exe or .msi file is required"));
+        st.toast(t(
+            "Нужен файл .exe или .msi",
+            "An .exe or .msi file is required",
+        ));
         return;
     }
     let prefix = default_prefix(st);
@@ -1065,7 +1226,10 @@ fn pick_exe_for_prefix(st: &Shared, idx: usize) {
     choose_file(
         st,
         t("Выберите программу", "Choose a program"),
-        t("Windows-программы (.exe, .msi)", "Windows programs (.exe, .msi)"),
+        t(
+            "Windows-программы (.exe, .msi)",
+            "Windows programs (.exe, .msi)",
+        ),
         &["exe", "msi"],
         move |st, path| {
             if let Some(prefix) = prefix_at(st, idx) {
@@ -1114,10 +1278,7 @@ fn launch(st: &Shared, prefix: Prefix, exes: Vec<PathBuf>) {
             Ok(exes.len())
         },
         |st, result| match result {
-            Ok(n) => st.toast(&format!(
-                "{}: {n}",
-                t("Запущено файлов", "Files launched")
-            )),
+            Ok(n) => st.toast(&format!("{}: {n}", t("Запущено файлов", "Files launched"))),
             Err(e) => st.toast(&format!("{}: {e}", t("Ошибка запуска", "Launch failed"))),
         },
     );
@@ -1160,6 +1321,44 @@ fn handle_deb_paths(st: &Shared, paths: Vec<PathBuf>) {
             Err(e) => st.toast(&format!(
                 "{}: {e}",
                 t("Ошибка установки", "Installation failed")
+            )),
+        },
+    );
+}
+
+// ---------- .flatpak ----------
+
+fn handle_flatpak_paths(st: &Shared, paths: Vec<PathBuf>) {
+    let bundles: Vec<PathBuf> = paths
+        .into_iter()
+        .filter(|path| has_ext(path, &["flatpak"]))
+        .collect();
+    if bundles.is_empty() {
+        st.toast(t("Нужен файл .flatpak", "A .flatpak file is required"));
+        return;
+    }
+    st.toast(t("Устанавливаю Flatpak…", "Installing Flatpak…"));
+
+    run_background(
+        st,
+        move || {
+            let mut installed = Vec::new();
+            for path in &bundles {
+                installed.push(flatpak::install_file(path)?);
+            }
+            Ok(installed)
+        },
+        |st, result| match result {
+            Ok(list) => {
+                for app in &list {
+                    let _ = shortcut::create_flatpak_shortcut(&app.id, &app.name);
+                    st.toast(&format!("{}: {}", t("Установлено", "Installed"), app.name));
+                }
+                refresh_flatpak_list(st);
+            }
+            Err(e) => st.toast(&format!(
+                "{}: {e}",
+                t("Ошибка установки Flatpak", "Flatpak installation failed")
             )),
         },
     );

@@ -20,6 +20,8 @@ finish-args:
   - --socket=fallback-x11
   - --socket=pulseaudio
   - --device=dri
+  # Установка .flatpak-бандлов выполняется на хосте через flatpak-spawn.
+  - --talk-name=org.freedesktop.Flatpak
   # Файлы, открытые двойным кликом, и доступ к загрузкам.
   - --filesystem=home
   - --filesystem=/media

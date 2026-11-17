@@ -41,9 +41,9 @@ Steps:
 Do not submit this automatically through a bot or AI agent: Flathub rules
 require the app author to open and write the submission manually.
 
-The manifest points at tag v0.1.0. Check the commit with:
+The manifest points at tag v0.1.1. Check the commit with:
 
-  git rev-parse v0.1.0
+  git rev-parse v0.1.1
 EOF
 
 tar -czf "$root/dist/flathub-submission.tar.gz" -C "$root/dist" flathub-submission

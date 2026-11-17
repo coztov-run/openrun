@@ -1,20 +1,21 @@
 name: openrun
 title: OpenRun
-version: '0.1.0'
+version: '0.1.1'
 summary: Run Windows applications and manage Wine prefixes
 description: |
   OpenRun is a compact GNOME-style manager for Windows applications.
 
   It downloads its own portable Wine runtime, creates isolated prefixes,
   remembers launched programs, and creates desktop shortcuts. Double-click
-  an .exe, .msi, or .deb file to open it in OpenRun; no system Wine is needed.
+  an .exe, .msi, .deb, or .flatpak file to open it in OpenRun; no system
+  Wine is needed.
 
   The interface is available in Russian and English and supports the system,
   light, and dark themes.
 
 base: core24
 grade: stable
-confinement: strict
+confinement: classic
 license: GPL-3.0-or-later
 icon: snap/gui/openrun.png
 contact: https://github.com/coztov-run/openrun/issues

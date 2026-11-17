@@ -65,7 +65,7 @@ fn is_supported_file(path: &Path) -> bool {
         .and_then(|e| e.to_str())
         .is_some_and(|ext| {
             let ext = ext.to_ascii_lowercase();
-            matches!(ext.as_str(), "exe" | "msi" | "deb")
+            matches!(ext.as_str(), "exe" | "msi" | "deb" | "flatpak")
         })
 }
 
@@ -80,6 +80,7 @@ mod tests {
         assert!(is_supported_file(Path::new("setup.EXE")));
         assert!(is_supported_file(Path::new("package.msi")));
         assert!(is_supported_file(Path::new("package.deb")));
+        assert!(is_supported_file(Path::new("package.flatpak")));
     }
 
     #[test]

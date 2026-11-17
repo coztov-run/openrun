@@ -1,4 +1,4 @@
-OpenRun 0.1.0 — portable Linux build
+OpenRun 0.1.1 — portable Linux build
 ====================================
 
 OpenRun is a GNOME-style manager for Windows applications. It downloads its
@@ -19,8 +19,8 @@ its own runtime and works on Ubuntu 22.04+, Debian 12+, Fedora, Arch, etc.
 
 Install
 -------
-    tar -xzf openrun-0.1.0-x86_64.tar.gz
-    cd openrun-0.1.0-x86_64
+    tar -xzf openrun-0.1.1-x86_64.tar.gz
+    cd openrun-0.1.1-x86_64
     ./install.sh
 
 The default installation prefix is ~/.local. To install elsewhere:

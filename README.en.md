@@ -4,8 +4,8 @@
 
 OpenRun is a small Windows application manager for Linux. It keeps Wine
 prefixes in one place, opens `.exe` and `.msi` files, installs local `.deb`
-packages, and creates shortcuts so you can find programs in the menu instead
-of digging through folders.
+and `.flatpak` packages, and creates shortcuts so you can find programs in
+the menu instead of digging through folders.
 
 It is written in Rust with GTK4 and libadwaita, so it looks at home on GNOME.
 On first launch it downloads its own Wine runtime. You do not need to install
@@ -15,9 +15,9 @@ Wine system-wide.
 
 ## What it does
 
-Double-click an `.exe`, `.msi`, or `.deb` and OpenRun takes it from there: it
-opens the file, creates a prefix if needed, starts or installs the program, and
-adds a shortcut. You do not have to launch OpenRun first.
+Double-click an `.exe`, `.msi`, `.deb`, or `.flatpak` and OpenRun takes it
+from there: it opens the file, creates a prefix if needed, starts or installs
+the program, and adds a shortcut. You do not have to launch OpenRun first.
 
 You can also drag files into the window. Dropping them on the big plus in the
 middle works too.
@@ -33,6 +33,11 @@ reads the ar archive itself (it only needs `tar`/`xz`), extracts files to
 `~/.local/share/openrun/deb`, rewrites `.desktop` files for the new paths, and
 copies icons into the icon theme. This works on Arch, CachyOS, Debian, Ubuntu,
 Pop!_OS, and other distributions.
+
+`.flatpak` bundles are installed through the system `flatpak` into the user
+installation. OpenRun remembers what it installed and creates a shortcut that
+runs `flatpak run <id>`. The “`.flatpak` packages” page lets you launch or
+remove them and drop new bundles there.
 
 Settings include the theme (system, light, dark), language (Russian or English),
 and a “Refresh” button that recreates shortcuts and the icon cache when
@@ -59,7 +64,7 @@ distributions: it brings its own libraries and does not depend on the system
 GTK version.
 
 ```bash
-flatpak install --user openrun-0.1.0-x86_64.flatpak
+flatpak install --user openrun-0.1.1-x86_64.flatpak
 flatpak run io.github.coztov_run.OpenRun
 ```
 
@@ -72,7 +77,7 @@ flatpak install flathub io.github.coztov_run.OpenRun
 ### Snap
 
 ```bash
-sudo snap install ./openrun_0.1.0_amd64.snap --classic --dangerous
+sudo snap install ./openrun_0.1.1_amd64.snap --classic --dangerous
 openrun
 ```
 
@@ -86,8 +91,8 @@ directory, registers MIME handlers, and launches Wine. See
 ### Portable tarball
 
 ```bash
-tar -xzf openrun-0.1.0-x86_64.tar.gz
-cd openrun-0.1.0-x86_64
+tar -xzf openrun-0.1.1-x86_64.tar.gz
+cd openrun-0.1.1-x86_64
 ./install.sh
 ~/.local/bin/openrun
 ```
@@ -98,8 +103,8 @@ Flatpak.
 
 The installer puts the binary in `~/.local/bin`, the launcher in
 `~/.local/share/applications`, and the icon in the icon theme. It also registers
-OpenRun as a handler for `.exe`, `.msi`, and `.deb`. Existing handlers stay as
-fallbacks.
+OpenRun as a handler for `.exe`, `.msi`, `.deb`, and `.flatpak`. Existing
+handlers stay as fallbacks.
 
 To remove it:
 
@@ -117,9 +122,9 @@ cargo run
 The first launch downloads the Wine runtime (about 100 MB) to
 `~/.local/share/openrun/runtime`. After that it works offline.
 
-Settings live in `~/.config/openrun`; prefixes and installed `.deb` files live
-in `~/.local/share/openrun`. Data from older versions is migrated
-automatically.
+Settings live in `~/.config/openrun`; prefixes, installed `.deb` files, and the
+list of `.flatpak` bundles live in `~/.local/share/openrun`. Data from older
+versions is migrated automatically.
 
 ## Double-click and shortcuts
 
@@ -130,10 +135,13 @@ OpenRun registers these MIME types:
 - `application/vnd.microsoft.portable-executable`
 - `application/x-msi`
 - `application/vnd.debian.binary-package`
+- `application/vnd.flatpak`
+- `application/x-flatpak`
 
 For `.exe` and `.msi` files you get
 `~/.local/share/applications/openrun-app-*.desktop` plus a copy on the desktop.
 For `.deb` packages, shortcuts are named `openrun-<package>-*.desktop`.
+For `.flatpak` bundles they are named `openrun-flatpak-<id>.desktop`.
 
 If a shortcut or icon does not show up, open Settings → “Shortcuts and icon
 cache” → “Refresh”. That is usually faster than digging through logs.

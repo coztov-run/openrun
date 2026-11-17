@@ -38,7 +38,7 @@ fi
 
 # Регистрируем обработчики .exe/.msi/.deb. Если xdg-mime нет, OpenRun
 # сделает это сам при первом запуске.
-MIMES="application/x-msdownload application/x-ms-dos-executable application/vnd.microsoft.portable-executable application/x-msi application/vnd.debian.binary-package"
+MIMES="application/x-msdownload application/x-ms-dos-executable application/vnd.microsoft.portable-executable application/x-msi application/vnd.debian.binary-package application/vnd.flatpak application/x-flatpak"
 if command -v xdg-mime >/dev/null 2>&1; then
     for mime in $MIMES; do
         XDG_DATA_DIRS="$PREFIX/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" \

@@ -10,11 +10,11 @@ sudo snap install rustup --classic
 snapcraft pack --destructive-mode
 ```
 
-Готовый файл появится в корне проекта: `openrun_0.1.0_amd64.snap`.
+Готовый файл появится в корне проекта: `openrun_0.1.1_amd64.snap`.
 Установка:
 
 ```bash
-sudo snap install ./openrun_0.1.0_amd64.snap --classic --dangerous
+sudo snap install ./openrun_0.1.1_amd64.snap --classic --dangerous
 openrun
 ```
 
@@ -47,7 +47,7 @@ OpenRun — системная утилита: она создаёт ярлык�
 2. Войдите: `snapcraft login`.
 3. Загрузите сборку:
    ```bash
-   snapcraft upload --release=stable openrun_0.1.0_amd64.snap
+   snapcraft upload --release=stable openrun_0.1.1_amd64.snap
    ```
 4. Дождитесь ревью classic-разрешения. После одобрения установка
    `sudo snap install openrun --classic` будет доступна всем.

@@ -31,18 +31,18 @@ AI-агентам создавать submission PR и писать за него
 ## Шаги
 
 1. Убедитесь, что репозиторий `https://github.com/coztov-run/openrun`
-   опубликован, а тег `v0.1.0` указывает на нужный коммит. Идентификатор
+   опубликован, а тег `v0.1.1` указывает на нужный коммит. Идентификатор
    приложения `io.github.coztov_run.OpenRun` подразумевает владельца
    `coztov-run` (в app-id — `coztov_run`) и репозиторий `openrun`.
 2. Проверьте commit тега:
 
    ```bash
-   git rev-parse v0.1.0
+   git rev-parse v0.1.1
    ```
 
 3. В `packaging/flathub/io.github.coztov_run.OpenRun.yml` уже указан commit
-   `b99bfe5162f32e7cb963f72a881158503862a132` для тега `v0.1.0`. Если тег
-   пересобран, замените его на новый `git rev-parse v0.1.0`.
+   `b99bfe5162f32e7cb963f72a881158503862a132` для тега `v0.1.1`. Если тег
+   пересобран, замените его на новый `git rev-parse v0.1.1`.
 4. `cargo-sources.json` уже лежит в корне репозитория. Он содержит архивы
    всех crates и нужен для сборки без сети. При изменении `Cargo.lock`
    пересоберите его:
@@ -85,7 +85,7 @@ AI-агентам создавать submission PR и писать за него
    `Add io.github.coztov_run.OpenRun`. Опишите, зачем нужны разрешения
    (`home`, `/media`, `/run/media`, `xdg-download`,
    `xdg-data/applications`, `xdg-data/icons`, `xdg-desktop`,
-   `xdg-config/mimeapps.list`), и дождитесь ревью.
+   `xdg-config/mimeapps.list`, `org.freedesktop.Flatpak`), и дождитесь ревью.
 
 9. После одобрения бот Flathub создаст репозиторий приложения и запустит
    официальную сборку. Тогда команда
@@ -109,13 +109,16 @@ AI-агентам создавать submission PR и писать за него
 Flatpak-песочница не даёт приложению свободно писать в домашний каталог.
 В манифесте уже запрошены:
 
-- `home` — произвольные `.exe`, `.msi` и `.deb`, которые пользователь
-  открывает двойным кликом из любой папки;
+- `home` — произвольные `.exe`, `.msi`, `.deb` и `.flatpak`, которые
+  пользователь открывает двойным кликом из любой папки;
 - `/media` и `/run/media` — те же файлы с флешек и внешних дисков;
 - `xdg-download` — файлы из «Загрузок»;
 - `xdg-data/applications` и `xdg-data/icons` — ярлыки и значки в меню;
 - `xdg-desktop` — ярлыки на рабочем столе;
-- `xdg-config/mimeapps.list` — OpenRun как обработчик по умолчанию.
+- `xdg-config/mimeapps.list` — OpenRun как обработчик по умолчанию;
+- `--talk-name=org.freedesktop.Flatpak` — установка `.flatpak` через
+  `flatpak-spawn --host`, потому что внутри песочницы нет системного
+  `flatpak`.
 
 `home` выглядит широко, но без него Flatpak не откроет `.exe` из случайной
 папки: файловый менеджер передаёт путь, а песочница его не видит. Если

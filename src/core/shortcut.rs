@@ -10,7 +10,9 @@ use anyhow::{Context, Result};
 
 use super::config::AppEntry;
 use super::deb;
+use super::flatpak;
 use super::i18n::t;
+use super::in_flatpak;
 use super::prefix::slug;
 use super::runtime;
 
@@ -27,9 +29,11 @@ const MIME_TYPES: &[&str] = &[
     "application/vnd.microsoft.portable-executable",
     "application/x-msi",
     "application/vnd.debian.binary-package",
+    "application/vnd.flatpak",
+    "application/x-flatpak",
 ];
 
-const MIME_LIST: &str = "application/x-msdownload;application/x-ms-dos-executable;application/vnd.microsoft.portable-executable;application/x-msi;application/vnd.debian.binary-package;";
+const MIME_LIST: &str = "application/x-msdownload;application/x-ms-dos-executable;application/vnd.microsoft.portable-executable;application/x-msi;application/vnd.debian.binary-package;application/vnd.flatpak;application/x-flatpak;";
 
 fn data_dir() -> PathBuf {
     dirs::data_dir().unwrap_or_else(|| PathBuf::from("."))
@@ -38,17 +42,6 @@ fn data_dir() -> PathBuf {
 /// Внутри Flatpak личные каталоги пользователя подменены песочницей.
 /// Ярлыки и MIME-ассоциации должны попадать в настоящий домашний каталог,
 /// поэтому для них используется отдельный путь.
-fn in_flatpak() -> bool {
-    if std::env::var("FLATPAK_ID").is_ok_and(|id| id == crate::APP_ID) {
-        return true;
-    }
-    // /.flatpak-info есть и у чужих Flatpak-приложений (например, у терминала),
-    // поэтому проверяем именно идентификатор OpenRun.
-    std::fs::read_to_string("/.flatpak-info")
-        .map(|text| text.contains(&format!("name={}", crate::APP_ID)))
-        .unwrap_or(false)
-}
-
 fn home_dir() -> PathBuf {
     dirs::home_dir().unwrap_or_else(|| PathBuf::from("."))
 }
@@ -105,7 +98,10 @@ fn write_icon() -> Result<PathBuf> {
         .join("apps");
     fs::create_dir_all(&dir)?;
     // Старые иконки прежних названий убираем, чтобы в меню не осталось двух значков.
-    for old in ["org.example.WineManager.svg", "io.github.openrun.OpenRun.svg"] {
+    for old in [
+        "org.example.WineManager.svg",
+        "io.github.openrun.OpenRun.svg",
+    ] {
         let _ = fs::remove_file(dir.join(old));
     }
 
@@ -241,10 +237,7 @@ fn update_mimeapps(text: &str) -> String {
     }
 
     for mime in MIME_TYPES {
-        if let Some(pos) = entries
-            .iter()
-            .position(|(key, _)| key.as_str() == *mime)
-        {
+        if let Some(pos) = entries.iter().position(|(key, _)| key.as_str() == *mime) {
             let value = &mut entries[pos].1;
             let mut ids: Vec<String> = value
                 .split(';')
@@ -262,7 +255,11 @@ fn update_mimeapps(text: &str) -> String {
 
     let mut new_lines: Vec<String> = lines[..start + 1].to_vec();
     new_lines.extend(other);
-    new_lines.extend(entries.into_iter().map(|(key, value)| format!("{key}={value}")));
+    new_lines.extend(
+        entries
+            .into_iter()
+            .map(|(key, value)| format!("{key}={value}")),
+    );
     new_lines.extend_from_slice(&lines[end..]);
 
     let mut out = new_lines.join("\n");
@@ -299,7 +296,11 @@ fn parse_mime_cache(text: &str) -> BTreeMap<String, Vec<String>> {
             continue;
         };
         let ids = map.entry(mime.trim().to_string()).or_default();
-        for id in handlers.split(';').map(str::trim).filter(|id| !id.is_empty()) {
+        for id in handlers
+            .split(';')
+            .map(str::trim)
+            .filter(|id| !id.is_empty())
+        {
             if !ids.iter().any(|known| known == id) {
                 ids.push(id.to_string());
             }
@@ -401,6 +402,7 @@ pub fn refresh_all(apps: &[AppEntry]) -> Result<()> {
         let _ = create_app_shortcut(app);
     }
     let _ = deb::refresh_launchers();
+    let _ = flatpak::refresh_launchers();
     refresh_icon_cache();
     Ok(())
 }
@@ -467,6 +469,32 @@ pub fn remove_app_shortcut(app: &AppEntry) {
     remove_launcher(&legacy_app_launcher_name(app));
 }
 
+fn flatpak_launcher_name(id: &str) -> String {
+    format!("openrun-flatpak-{}.desktop", slug(id))
+}
+
+/// Создаёт ярлык для Flatpak-приложения, установленного через OpenRun.
+pub fn create_flatpak_shortcut(id: &str, name: &str) -> Result<PathBuf> {
+    let content = format!(
+        "[Desktop Entry]\n\
+         Type=Application\n\
+         Version=1.0\n\
+         Name={name}\n\
+         Comment={}\n\
+         Exec=flatpak run {}\n\
+         Icon={id}\n\
+         Terminal=false\n\
+         Categories=Utility;\n",
+        t("Запуск через Flatpak", "Launch via Flatpak"),
+        quote(id)
+    );
+    write_launcher(&flatpak_launcher_name(id), &content)
+}
+
+pub fn remove_flatpak_shortcut(id: &str) {
+    remove_launcher(&flatpak_launcher_name(id));
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -480,13 +508,13 @@ mod tests {
         assert!(out.contains("application/x-msdownload=openrun.desktop;"));
         assert!(out.contains("application/x-msi=openrun.desktop;"));
         assert!(out.contains("application/vnd.debian.binary-package=openrun.desktop;"));
+        assert!(out.contains("application/vnd.flatpak=openrun.desktop;"));
     }
 
     #[test]
     fn keeps_previous_handler_as_fallback() {
-        let out = update_mimeapps(
-            "[Default Applications]\napplication/x-msdownload=wine.desktop;\n",
-        );
+        let out =
+            update_mimeapps("[Default Applications]\napplication/x-msdownload=wine.desktop;\n");
         assert!(out.contains("application/x-msdownload=openrun.desktop;wine.desktop;"));
     }
 
@@ -502,7 +530,8 @@ mod tests {
 
     #[test]
     fn reads_mime_types_from_desktop_entry() {
-        let text = "[Desktop Entry]\nName=Test\nMimeType=application/x-msi;application/x-msdownload;\n";
+        let text =
+            "[Desktop Entry]\nName=Test\nMimeType=application/x-msi;application/x-msdownload;\n";
         assert_eq!(
             desktop_mime_types(text),
             vec!["application/x-msi", "application/x-msdownload"]
@@ -511,7 +540,8 @@ mod tests {
 
     #[test]
     fn mime_cache_keeps_old_handlers_and_puts_openrun_first() {
-        let old = "[MIME Cache]\napplication/x-msdownload=wine.desktop;\ntext/plain=gedit.desktop;\n";
+        let old =
+            "[MIME Cache]\napplication/x-msdownload=wine.desktop;\ntext/plain=gedit.desktop;\n";
         let found = BTreeMap::from([(
             "application/x-msdownload".to_string(),
             vec!["openrun.desktop".to_string()],

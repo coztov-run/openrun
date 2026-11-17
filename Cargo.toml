@@ -1,6 +1,6 @@
 [package]
 name = "openrun"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "OpenRun — менеджер Windows-программ и префиксов с интерфейсом в стиле GNOME"
 license = "GPL-3.0-or-later"

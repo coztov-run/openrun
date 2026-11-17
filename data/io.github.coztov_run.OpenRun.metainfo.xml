@@ -57,6 +57,7 @@
     <keyword>exe</keyword>
     <keyword>msi</keyword>
     <keyword>deb</keyword>
+    <keyword>flatpak</keyword>
     <keyword>prefix</keyword>
   </keywords>
 
@@ -67,6 +68,8 @@
     <mediatype>application/vnd.microsoft.portable-executable</mediatype>
     <mediatype>application/x-msi</mediatype>
     <mediatype>application/vnd.debian.binary-package</mediatype>
+    <mediatype>application/vnd.flatpak</mediatype>
+    <mediatype>application/x-flatpak</mediatype>
   </provides>
 
   <screenshots>
@@ -78,6 +81,12 @@
   </screenshots>
 
   <releases>
+    <release version="0.1.1" date="2026-11-17">
+      <description>
+        <p>Added .flatpak bundle installation, shortcuts, and a Flatpak packages page.</p>
+        <p xml:lang="ru">Добавлена установка .flatpak-бандлов, ярлыки и страница «Пакеты .flatpak».</p>
+      </description>
+    </release>
     <release version="0.1.0" date="2026-11-17">
       <description>
         <p>First public packaging of OpenRun.</p>
