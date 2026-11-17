@@ -57,5 +57,5 @@ modules:
       - type: git
         url: https://github.com/coztov-run/openrun.git
         tag: v0.1.0
-        commit: 356b16c775f28fb1ddc67996139ba81b14b3ef13
+        commit: b99bfe5162f32e7cb963f72a881158503862a132
       - cargo-sources.json
