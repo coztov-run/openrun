@@ -37,6 +37,9 @@ OpenRun — системная утилита: она создаёт ярлык�
 категории «classic confinement» на forum.snapcraft.io, указав ссылку на
 исходники и объяснив необходимость доступа к ярлыкам и Wine.
 
+Важно: у classic-снапа не должно быть секции `plugs`/`slots`. Иначе Store
+ответит `confinement 'classic' not allowed with plugs/slots`.
+
 ## Публикация
 
 1. Зарегистрируйте имя `openrun` в Snap Store:

@@ -37,18 +37,8 @@ apps:
     command: bin/openrun
     desktop: share/applications/io.github.coztov_run.OpenRun.desktop
     common-id: io.github.coztov_run.OpenRun
-    plugs:
-      - home
-      - network
-      - network-bind
-      - desktop
-      - wayland
-      - x11
-      - audio-playback
-      - process-control
-      - hardware-observe
-      - mount-observe
-      - removable-media
+    # У classic-снапов не бывает plugs/slots. Доступ к домашнему каталогу,
+    # сети, звуку и removable-media и так есть из-за classic confinement.
 
 parts:
   openrun:

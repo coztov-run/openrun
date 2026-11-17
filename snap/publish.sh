@@ -23,11 +23,9 @@ snapcraft login
 snapcraft whoami
 
 snap_file="openrun_0.1.0_amd64.snap"
-if [ ! -f "$snap_file" ]; then
-    echo "Скачиваю $snap_file из GitHub Releases..."
-    curl -L -o "$snap_file" \
-        "https://github.com/coztov-run/openrun/releases/download/v0.1.0/$snap_file"
-fi
+echo "Скачиваю свежий $snap_file из GitHub Releases..."
+curl -fL -o "$snap_file" \
+    "https://github.com/coztov-run/openrun/releases/download/v0.1.0/$snap_file"
 
 if ! snapcraft register openrun; then
     echo
