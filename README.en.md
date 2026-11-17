@@ -11,6 +11,8 @@ It is written in Rust with GTK4 and libadwaita, so it looks at home on GNOME.
 On first launch it downloads its own Wine runtime. You do not need to install
 Wine system-wide.
 
+![OpenRun window](data/screenshots/openrun-main.png)
+
 ## What it does
 
 Double-click an `.exe`, `.msi`, or `.deb` and OpenRun takes it from there: it

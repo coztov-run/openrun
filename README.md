@@ -11,6 +11,8 @@ OpenRun — это менеджер Windows-программ для Linux. Он 
 GNOME. Собственный Wine-рантайм скачивается при первом запуске — отдельно
 ставить Wine в систему не нужно.
 
+![Окно OpenRun](data/screenshots/openrun-main.png)
+
 ## Что умеет
 
 Двойной клик по `.exe`, `.msi` или `.deb` — и OpenRun сам открывает файл,

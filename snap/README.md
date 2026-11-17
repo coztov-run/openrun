@@ -4,6 +4,9 @@
 
 ```bash
 sudo snap install snapcraft --classic
+# Snapcraft 9 ставит rustup как build-snap, но rustup есть только
+# с classic-подключением. Поэтому ставим его заранее.
+sudo snap install rustup --classic
 snapcraft pack --destructive-mode
 ```
 
