@@ -156,8 +156,10 @@ pub fn create_self_shortcut() -> Result<PathBuf> {
         format!("{} %F", quote(&exe.display().to_string()))
     };
     let icon = write_icon()?;
-    // Ярлык прежнего названия больше не нужен.
-    remove_launcher("wine-manager.desktop");
+    // Ярлыки прежних названий и app-id больше не нужны.
+    for old in ["wine-manager.desktop", "io.github.openrun.OpenRun.desktop"] {
+        remove_launcher(old);
+    }
     let content = format!(
         "[Desktop Entry]\n\
          Type=Application\n\

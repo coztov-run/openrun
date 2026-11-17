@@ -1,5 +1,7 @@
 # OpenRun
 
+[English version](README.en.md)
+
 Менеджер Windows-программ и префиксов с интерфейсом в стиле GNOME, на Rust,
 GTK4 и libadwaita. OpenRun работает на собственном встроенном рантайме —
 устанавливать Wine в систему не нужно.
