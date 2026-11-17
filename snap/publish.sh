@@ -33,9 +33,16 @@ if ! snapcraft register openrun; then
     echo "Если нет — имя придётся сменить в snap/snapcraft.yaml."
 fi
 
-snapcraft upload --release=stable "$snap_file"
+if ! snapcraft upload --release=stable "$snap_file"; then
+    echo
+    echo "Store не принял snap. Для classic-снапов это обычно значит,"
+    echo "что нужно ручное ревью. Оставь заявку здесь:"
+    echo "https://forum.snapcraft.io/c/store-requests/classic-confinement/28"
+    echo
+    echo "После одобрения повтори:"
+    echo "  snapcraft upload --release=stable $snap_file"
+    exit 1
+fi
 
 echo
-echo "Готово. Если Store ответил, что нужен classic confinement,"
-echo "оставь заявку здесь: https://forum.snapcraft.io/c/store-requests"
-echo "После одобрения повтори: snapcraft upload --release=stable $snap_file"
+echo "Готово: snap загружен в Snap Store."
