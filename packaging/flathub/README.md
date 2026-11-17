@@ -21,6 +21,8 @@ AI-агентам создавать submission PR и писать за него
 - `data/io.github.coztov_run.OpenRun.metainfo.xml` — AppStream-метаданные.
 - `data/io.github.coztov_run.OpenRun.desktop` — ярлык и MIME-ассоциации.
 - `data/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg` — иконка.
+- `packaging/flathub/prepare.sh` — собирает `dist/flathub-submission.tar.gz`
+  с тремя файлами для форка Flathub и инструкцией.
 
 ## Шаги
 
