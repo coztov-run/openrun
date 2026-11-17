@@ -77,9 +77,9 @@ AI-агентам создавать submission PR и писать за него
 8. Закоммитьте файлы и отправьте ветку. Откройте Pull Request **в ветку
    `new-pr`** (не в `master`) с заголовком
    `Add io.github.coztov_run.OpenRun`. Опишите, зачем нужны разрешения
-   (`home`, `removable-media`, `xdg-download`, `xdg-data/applications`,
-   `xdg-data/icons`, `xdg-desktop`, `xdg-config/mimeapps.list`), и дождитесь
-   ревью.
+   (`home`, `/media`, `/run/media`, `xdg-download`,
+   `xdg-data/applications`, `xdg-data/icons`, `xdg-desktop`,
+   `xdg-config/mimeapps.list`), и дождитесь ревью.
 
 9. После одобрения бот Flathub создаст репозиторий приложения и запустит
    официальную сборку. Тогда команда
@@ -105,7 +105,7 @@ Flatpak-песочница не даёт приложению свободно �
 
 - `home` — произвольные `.exe`, `.msi` и `.deb`, которые пользователь
   открывает двойным кликом из любой папки;
-- `removable-media` — те же файлы с флешек и внешних дисков;
+- `/media` и `/run/media` — те же файлы с флешек и внешних дисков;
 - `xdg-download` — файлы из «Загрузок»;
 - `xdg-data/applications` и `xdg-data/icons` — ярлыки и значки в меню;
 - `xdg-desktop` — ярлыки на рабочем столе;

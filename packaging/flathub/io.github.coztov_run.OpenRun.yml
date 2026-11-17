@@ -29,7 +29,8 @@ finish-args:
   - --socket=pulseaudio
   - --device=dri
   - --filesystem=home
-  - --filesystem=removable-media
+  - --filesystem=/media
+  - --filesystem=/run/media
   - --filesystem=xdg-download
   - --filesystem=xdg-data/applications:create
   - --filesystem=xdg-data/icons:create
