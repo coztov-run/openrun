@@ -23,6 +23,10 @@ AI-агентам создавать submission PR и писать за него
 - `data/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg` — иконка.
 - `packaging/flathub/prepare.sh` — собирает `dist/flathub-submission.tar.gz`
   с тремя файлами для форка Flathub и инструкцией.
+- Готовая ветка в форке:
+  `https://github.com/coztov-run/flathub/tree/io.github.coztov_run.OpenRun`
+- Создать PR из неё:
+  `https://github.com/flathub/flathub/compare/new-pr...coztov-run:io.github.coztov_run.OpenRun?expand=1`
 
 ## Шаги
 
