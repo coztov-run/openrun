@@ -27,8 +27,10 @@ website: https://github.com/coztov-run/openrun
 # programs from the user's home directory. The Snap Store reviews classic
 # snaps manually. For a strict-confinement build, replace this with
 # confinement: strict and add personal-files plugs for the same paths.
-architectures:
-  - amd64
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
 
 apps:
   openrun:
