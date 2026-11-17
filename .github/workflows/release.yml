@@ -41,6 +41,8 @@ jobs:
 
       - name: Build Flatpak bundle
         run: |
+          # Локальный манифест использует type: dir; не копируем 3 ГБ target.
+          rm -rf target
           flatpak remote-add --if-not-exists --user flathub \
             https://flathub.org/repo/flathub.flatpakrepo
           flatpak-builder --user --install-deps-from=flathub \
