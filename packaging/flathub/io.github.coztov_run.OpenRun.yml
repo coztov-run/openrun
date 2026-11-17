@@ -1,0 +1,58 @@
+# Шаблон для Flathub.
+#
+# 1. Создайте репозиторий https://github.com/coztov-run/openrun
+#    (или замените app-id, URL и имя иконки на свой GitHub-аккаунт).
+# 2. Поставьте тег v0.1.0 и узнайте commit:
+#      git rev-parse v0.1.0
+# 3. Впишите commit ниже вместо REPLACE_WITH_COMMIT_SHA.
+# 4. Проверьте сборку:
+#      flatpak-builder --user --install-deps-from=flathub \
+#        --repo=repo --force-clean build-dir \
+#        packaging/flathub/io.github.coztov_run.OpenRun.yml
+# 5. Форкните https://github.com/flathub/io.github.coztov_run.OpenRun,
+#    положите этот файл в корень и откройте Pull Request.
+#
+# В Flathub источник должен быть воспроизводимым: type: dir не принимается.
+app-id: io.github.coztov_run.OpenRun
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: openrun
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  - --filesystem=xdg-download
+  - --filesystem=xdg-data/applications:create
+  - --filesystem=xdg-data/icons:create
+  - --filesystem=xdg-desktop:create
+  - --filesystem=xdg-config/mimeapps.list
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/openrun/cargo
+    CARGO_NET_OFFLINE: 'true'
+
+modules:
+  - name: openrun
+    buildsystem: simple
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --locked
+      - install -Dm755 target/release/openrun /app/bin/openrun
+      - install -Dm644 data/io.github.coztov_run.OpenRun.desktop /app/share/applications/io.github.coztov_run.OpenRun.desktop
+      - install -Dm644 data/io.github.coztov_run.OpenRun.metainfo.xml /app/share/metainfo/io.github.coztov_run.OpenRun.metainfo.xml
+      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg /app/share/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg
+    sources:
+      - type: git
+        url: https://github.com/coztov-run/openrun.git
+        tag: v0.1.0
+        commit: REPLACE_WITH_COMMIT_SHA
+      - cargo-sources.json

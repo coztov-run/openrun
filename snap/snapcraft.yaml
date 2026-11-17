@@ -1,0 +1,85 @@
+name: openrun
+title: OpenRun
+version: '0.1.0'
+summary: Run Windows applications and manage Wine prefixes
+description: |
+  OpenRun is a compact GNOME-style manager for Windows applications.
+
+  It downloads its own portable Wine runtime, creates isolated prefixes,
+  remembers launched programs, and creates desktop shortcuts. Double-click
+  an .exe, .msi, or .deb file to open it in OpenRun; no system Wine is needed.
+
+  The interface is available in Russian and English and supports the system,
+  light, and dark themes.
+
+base: core24
+grade: stable
+confinement: classic
+license: GPL-3.0-or-later
+icon: snap/gui/openrun.png
+contact: https://github.com/coztov-run/openrun/issues
+issues: https://github.com/coztov-run/openrun/issues
+source-code: https://github.com/coztov-run/openrun
+website: https://github.com/coztov-run/openrun
+
+# Classic confinement is required: OpenRun writes application shortcuts to
+# ~/.local/share/applications, registers MIME handlers, and launches Wine
+# programs from the user's home directory. The Snap Store reviews classic
+# snaps manually. For a strict-confinement build, replace this with
+# confinement: strict and add personal-files plugs for the same paths.
+architectures:
+  - amd64
+
+apps:
+  openrun:
+    command: bin/openrun
+    desktop: share/applications/io.github.coztov_run.OpenRun.desktop
+    common-id: io.github.coztov_run.OpenRun
+    plugs:
+      - home
+      - network
+      - network-bind
+      - desktop
+      - wayland
+      - x11
+      - audio-playback
+      - process-control
+      - hardware-observe
+      - mount-observe
+      - removable-media
+
+parts:
+  openrun:
+    plugin: rust
+    source: .
+    build-packages:
+      - libgtk-4-dev
+      - libadwaita-1-dev
+      - pkg-config
+    stage-packages:
+      - libgtk-4-1
+      - libgtk-4-common
+      - libadwaita-1-0
+      - dconf-gsettings-backend
+      - gsettings-desktop-schemas
+      - hicolor-icon-theme
+      - shared-mime-info
+      - desktop-file-utils
+      - xdg-utils
+      - ca-certificates
+      - fonts-dejavu-core
+      - libgl1
+      - libegl1
+      - libgles2
+      - libvulkan1
+      - libwayland-client0
+      - libx11-6
+      - libxkbcommon0
+    override-build: |
+      craftctl default
+      install -Dm644 data/io.github.coztov_run.OpenRun.desktop \
+        "$CRAFT_PART_INSTALL/share/applications/io.github.coztov_run.OpenRun.desktop"
+      install -Dm644 data/io.github.coztov_run.OpenRun.metainfo.xml \
+        "$CRAFT_PART_INSTALL/share/metainfo/io.github.coztov_run.OpenRun.metainfo.xml"
+      install -Dm644 data/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg \
+        "$CRAFT_PART_INSTALL/share/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg"

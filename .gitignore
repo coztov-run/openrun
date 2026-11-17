@@ -1,0 +1,7 @@
+/target
+/dist
+/build-dir
+/repo
+/*.flatpak
+/*.snap
+/openrun_*.snap

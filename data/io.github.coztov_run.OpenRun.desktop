@@ -1,0 +1,17 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=OpenRun
+GenericName=Windows Application Manager
+GenericName[ru]=Менеджер Windows-программ
+Comment=Run Windows applications and manage Wine prefixes
+Comment[ru]=Запуск Windows-программ и управление префиксами Wine
+Exec=openrun %F
+Icon=io.github.coztov_run.OpenRun
+Terminal=false
+Categories=Utility;System;
+Keywords=wine;windows;exe;msi;deb;prefix;
+Keywords[ru]=wine;windows;exe;msi;deb;префикс;
+MimeType=application/x-msdownload;application/x-ms-dos-executable;application/vnd.microsoft.portable-executable;application/x-msi;application/vnd.debian.binary-package;
+StartupNotify=true
+StartupWMClass=io.github.coztov_run.OpenRun

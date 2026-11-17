@@ -1,0 +1,50 @@
+# Локальная сборка Flatpak:
+#   flatpak-builder --user --install-deps-from=flathub --repo=repo \
+#     --force-clean build-dir flatpak/io.github.coztov_run.OpenRun.yml
+#   flatpak build-bundle repo openrun.flatpak io.github.coztov_run.OpenRun
+#
+# Для Flathub используйте packaging/flathub/io.github.coztov_run.OpenRun.yml:
+# там источник должен быть git/архивом, а не локальным каталогом.
+app-id: io.github.coztov_run.OpenRun
+runtime: org.gnome.Platform
+runtime-version: '49'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+command: openrun
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --socket=pulseaudio
+  - --device=dri
+  # Файлы, открытые двойным кликом, и доступ к загрузкам.
+  - --filesystem=xdg-download
+  # Ярлыки OpenRun/Windows-программ должны попадать в настоящее меню и на стол.
+  - --filesystem=xdg-data/applications:create
+  - --filesystem=xdg-data/icons:create
+  - --filesystem=xdg-desktop:create
+  - --filesystem=xdg-config/mimeapps.list
+
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin
+  env:
+    CARGO_HOME: /run/build/openrun/cargo
+    CARGO_NET_OFFLINE: 'true'
+
+modules:
+  - name: openrun
+    buildsystem: simple
+    build-commands:
+      - cargo --offline fetch --manifest-path Cargo.toml --verbose
+      - cargo --offline build --release --locked
+      - install -Dm755 target/release/openrun /app/bin/openrun
+      - install -Dm644 data/io.github.coztov_run.OpenRun.desktop /app/share/applications/io.github.coztov_run.OpenRun.desktop
+      - install -Dm644 data/io.github.coztov_run.OpenRun.metainfo.xml /app/share/metainfo/io.github.coztov_run.OpenRun.metainfo.xml
+      - install -Dm644 data/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg /app/share/icons/hicolor/scalable/apps/io.github.coztov_run.OpenRun.svg
+    sources:
+      - type: dir
+        path: ..
+      - ../cargo-sources.json

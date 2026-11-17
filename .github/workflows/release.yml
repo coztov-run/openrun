@@ -1,0 +1,73 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libgtk-4-dev libadwaita-1-dev pkg-config \
+            flatpak flatpak-builder elfutils
+
+      - name: Read version
+        run: |
+          VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -n 1)
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Test and build
+        run: |
+          cargo test --locked
+          cargo build --release --locked
+
+      - name: Build portable tarball
+        run: bash packaging/portable/build.sh
+
+      - name: Build Flatpak bundle
+        run: |
+          flatpak remote-add --if-not-exists --user flathub \
+            https://flathub.org/repo/flathub.flatpakrepo
+          flatpak-builder --user --install-deps-from=flathub \
+            --repo=repo --force-clean --disable-rofiles-fuse \
+            build-dir flatpak/io.github.coztov_run.OpenRun.yml
+          flatpak build-bundle repo \
+            "dist/openrun-${VERSION}-x86_64.flatpak" \
+            io.github.coztov_run.OpenRun
+
+      - name: Build Snap
+        run: |
+          sudo snap install snapcraft --classic
+          snapcraft pack --destructive-mode
+          mv openrun_*.snap dist/
+
+      - name: Write checksums
+        run: |
+          cd dist
+          sha256sum ./*.tar.gz ./*.flatpak ./*.snap > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.flatpak
+            dist/*.snap
+            dist/SHA256SUMS
+          fail_on_unmatched_files: false

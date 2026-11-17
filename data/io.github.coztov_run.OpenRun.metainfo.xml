@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.coztov_run.OpenRun</id>
+
+  <name>OpenRun</name>
+  <summary>Run Windows applications and manage Wine prefixes</summary>
+  <summary xml:lang="ru">Запуск Windows-программ и управление префиксами Wine</summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+
+  <description>
+    <p>
+      OpenRun is a compact GNOME-style manager for Windows applications.
+      It downloads its own portable Wine runtime, creates isolated prefixes,
+      and remembers every program you launch.
+    </p>
+    <p>
+      Double-click an .exe, .msi, or .deb file in your file manager and OpenRun
+      opens it, prepares a prefix when needed, starts or installs the program,
+      and creates a desktop shortcut. Existing Wine installations are not required.
+    </p>
+    <p xml:lang="ru">
+      OpenRun — компактный менеджер Windows-программ в стиле GNOME. Он сам
+      скачивает портативный Wine, создаёт отдельные префиксы и запоминает
+      запущенные программы. Двойной клик по .exe, .msi или .deb запускает
+      OpenRun, подготавливает префикс, запускает или устанавливает программу
+      и создаёт ярлык. Системный Wine не требуется.
+    </p>
+    <ul>
+      <li>Portable Wine runtime, no system Wine required</li>
+      <li>Double-click handling for .exe, .msi, and .deb</li>
+      <li>Separate prefixes and desktop shortcuts for applications</li>
+      <li>Russian and English interface, system/light/dark theme</li>
+      <li>Refresh shortcuts and icon caches from Settings</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.coztov_run.OpenRun.desktop</launchable>
+
+  <developer id="io.github.coztov_run">
+    <name>OpenRun contributors</name>
+  </developer>
+  <developer_name>OpenRun contributors</developer_name>
+
+  <url type="homepage">https://github.com/coztov-run/openrun</url>
+  <url type="bugtracker">https://github.com/coztov-run/openrun/issues</url>
+  <url type="vcs-browser">https://github.com/coztov-run/openrun</url>
+
+  <categories>
+    <category>Utility</category>
+    <category>System</category>
+  </categories>
+
+  <keywords>
+    <keyword>wine</keyword>
+    <keyword>windows</keyword>
+    <keyword>exe</keyword>
+    <keyword>msi</keyword>
+    <keyword>deb</keyword>
+    <keyword>prefix</keyword>
+  </keywords>
+
+  <provides>
+    <binary>openrun</binary>
+    <mediatype>application/x-msdownload</mediatype>
+    <mediatype>application/x-ms-dos-executable</mediatype>
+    <mediatype>application/vnd.microsoft.portable-executable</mediatype>
+    <mediatype>application/x-msi</mediatype>
+    <mediatype>application/vnd.debian.binary-package</mediatype>
+  </provides>
+
+  <screenshots>
+    <screenshot type="default">
+      <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-main.png</image>
+      <caption>Prefixes and applications</caption>
+      <caption xml:lang="ru">Префиксы и приложения</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="0.1.0" date="2026-11-17">
+      <description>
+        <p>First public packaging of OpenRun.</p>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+
+  <recommends>
+    <control>pointing</control>
+    <control>keyboard</control>
+  </recommends>
+</component>
