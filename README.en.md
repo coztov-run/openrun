@@ -11,8 +11,6 @@ It is written in Rust with GTK4 and libadwaita, so it looks at home on GNOME.
 On first launch it downloads its own Wine runtime. You do not need to install
 Wine system-wide.
 
-![OpenRun window](data/screenshots/openrun-main.png)
-
 ### Categories
 
 <p align="center">

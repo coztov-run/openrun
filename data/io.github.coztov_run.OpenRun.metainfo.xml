@@ -77,11 +77,6 @@
 
   <screenshots>
     <screenshot type="default">
-      <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-main.png</image>
-      <caption>Prefixes and applications</caption>
-      <caption xml:lang="ru">Префиксы и приложения</caption>
-    </screenshot>
-    <screenshot>
       <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-prefixes.png</image>
       <caption>Prefixes</caption>
       <caption xml:lang="ru">Префиксы</caption>
