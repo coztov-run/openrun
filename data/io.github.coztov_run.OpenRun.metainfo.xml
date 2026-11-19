@@ -58,6 +58,8 @@
     <keyword>msi</keyword>
     <keyword>deb</keyword>
     <keyword>flatpak</keyword>
+    <keyword>apk</keyword>
+    <keyword>android</keyword>
     <keyword>prefix</keyword>
   </keywords>
 
@@ -70,6 +72,7 @@
     <mediatype>application/vnd.debian.binary-package</mediatype>
     <mediatype>application/vnd.flatpak</mediatype>
     <mediatype>application/x-flatpak</mediatype>
+    <mediatype>application/vnd.android.package-archive</mediatype>
   </provides>
 
   <screenshots>
@@ -77,6 +80,26 @@
       <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-main.png</image>
       <caption>Prefixes and applications</caption>
       <caption xml:lang="ru">Префиксы и приложения</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-prefixes.png</image>
+      <caption>Prefixes</caption>
+      <caption xml:lang="ru">Префиксы</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-deb.png</image>
+      <caption>.deb packages</caption>
+      <caption xml:lang="ru">Пакеты .deb</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-flatpak.png</image>
+      <caption>.flatpak packages</caption>
+      <caption xml:lang="ru">Пакеты .flatpak</caption>
+    </screenshot>
+    <screenshot>
+      <image type="source">https://raw.githubusercontent.com/coztov-run/openrun/main/data/screenshots/openrun-android.png</image>
+      <caption>Android apps</caption>
+      <caption xml:lang="ru">Android-приложения</caption>
     </screenshot>
   </screenshots>
 

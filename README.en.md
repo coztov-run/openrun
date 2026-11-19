@@ -13,10 +13,21 @@ Wine system-wide.
 
 ![OpenRun window](data/screenshots/openrun-main.png)
 
+### Categories
+
+<p align="center">
+  <img src="data/screenshots/openrun-prefixes.png" width="48%" alt="Prefixes">
+  <img src="data/screenshots/openrun-deb.png" width="48%" alt=".deb packages">
+</p>
+<p align="center">
+  <img src="data/screenshots/openrun-flatpak.png" width="48%" alt=".flatpak packages">
+  <img src="data/screenshots/openrun-android.png" width="48%" alt="Android apps">
+</p>
+
 ## What it does
 
-Double-click an `.exe`, `.msi`, `.deb`, or `.flatpak` and OpenRun takes it
-from there: it opens the file, creates a prefix if needed, starts or installs
+Double-click an `.exe`, `.msi`, `.deb`, `.flatpak`, or `.apk` and OpenRun takes
+it from there: it opens the file, creates a prefix if needed, starts or installs
 the program, and adds a shortcut. You do not have to launch OpenRun first.
 
 You can also drag files into the window. Dropping them on the big plus in the
@@ -38,6 +49,18 @@ Pop!_OS, and other distributions.
 installation. OpenRun remembers what it installed and creates a shortcut that
 runs `flatpak run <id>`. The “`.flatpak` packages” page lets you launch or
 remove them and drop new bundles there.
+
+### Android apps
+
+`.apk` files use the OpenRun Android runtime. The “Android apps” page can install
+an APK, launch it, remove it, or create a shortcut. If the runtime is not
+downloaded yet, the bottom of the page shows an “OpenRun Android is not
+downloaded!” banner with a “Download” button. It downloads the AppImage and
+system images (about 1.1 GB) to `~/.local/share/openrun/android`. The runtime
+must be running; it needs Wayland and `binder` support in the kernel. Technical
+detail: the runtime is currently based on Waydroid, so its system component has
+to be installed once. A separate Wine or Android SDK installation is not
+needed.
 
 Settings include the theme (system, light, dark), language (Russian or English),
 and a “Refresh” button that recreates shortcuts and the icon cache when
@@ -103,8 +126,8 @@ Flatpak.
 
 The installer puts the binary in `~/.local/bin`, the launcher in
 `~/.local/share/applications`, and the icon in the icon theme. It also registers
-OpenRun as a handler for `.exe`, `.msi`, `.deb`, and `.flatpak`. Existing
-handlers stay as fallbacks.
+OpenRun as a handler for `.exe`, `.msi`, `.deb`, `.flatpak`, and `.apk`.
+Existing handlers stay as fallbacks.
 
 To remove it:
 
@@ -137,11 +160,14 @@ OpenRun registers these MIME types:
 - `application/vnd.debian.binary-package`
 - `application/vnd.flatpak`
 - `application/x-flatpak`
+- `application/vnd.android.package-archive`
 
 For `.exe` and `.msi` files you get
 `~/.local/share/applications/openrun-app-*.desktop` plus a copy on the desktop.
 For `.deb` packages, shortcuts are named `openrun-<package>-*.desktop`.
 For `.flatpak` bundles they are named `openrun-flatpak-<id>.desktop`.
+Android app shortcuts are named `openrun-android-<package>.desktop` and launch
+OpenRun with `--launch-android`.
 
 If a shortcut or icon does not show up, open Settings → “Shortcuts and icon
 cache” → “Refresh”. That is usually faster than digging through logs.

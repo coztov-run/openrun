@@ -33,6 +33,12 @@ fn main() -> glib::ExitCode {
                 return 0;
             }
         }
+        if let Some(pos) = arguments.iter().position(|arg| arg == "--launch-android") {
+            if let Some(package) = arguments.get(pos + 1).filter(|name| !name.is_empty()) {
+                ui::open_android(app, package);
+                return 0;
+            }
+        }
 
         let files = files_from_command_line(cmdline);
         ui::open(app, files);
@@ -65,7 +71,7 @@ fn is_supported_file(path: &Path) -> bool {
         .and_then(|e| e.to_str())
         .is_some_and(|ext| {
             let ext = ext.to_ascii_lowercase();
-            matches!(ext.as_str(), "exe" | "msi" | "deb" | "flatpak")
+            matches!(ext.as_str(), "exe" | "msi" | "deb" | "flatpak" | "apk")
         })
 }
 
@@ -81,6 +87,7 @@ mod tests {
         assert!(is_supported_file(Path::new("package.msi")));
         assert!(is_supported_file(Path::new("package.deb")));
         assert!(is_supported_file(Path::new("package.flatpak")));
+        assert!(is_supported_file(Path::new("application.apk")));
     }
 
     #[test]

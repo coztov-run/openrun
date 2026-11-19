@@ -18,6 +18,7 @@ use crate::core::prefix::Prefix;
 use crate::core::runner;
 use crate::core::runtime;
 use crate::core::shortcut;
+use crate::core::waydroid;
 
 const CSS: &str = "
 /* Компактные кнопки боковой панели в стиле Nautilus (GNOME Files) */
@@ -79,12 +80,17 @@ struct State {
     app_group: adw::PreferencesGroup,
     app_rows: RefCell<Vec<adw::ActionRow>>,
     stack: gtk::Stack,
+    sidebar: gtk::ListBox,
     deb_group: adw::PreferencesGroup,
     deb_rows: RefCell<Vec<adw::ActionRow>>,
     flatpak_group: adw::PreferencesGroup,
     flatpak_rows: RefCell<Vec<adw::ActionRow>>,
+    android_group: adw::PreferencesGroup,
+    android_rows: RefCell<Vec<adw::ActionRow>>,
     runtime_toast: RefCell<Option<adw::Toast>>,
     runtime_busy: Cell<bool>,
+    android_toast: RefCell<Option<adw::Toast>>,
+    android_busy: Cell<bool>,
 }
 
 type Shared = Rc<State>;
@@ -243,6 +249,38 @@ pub fn open_app(app: &adw::Application, name: &str) {
     });
 }
 
+/// Открывает страницу Android и запускает приложение OpenRun Android.
+/// Используется ярлыками, созданными внутри Flatpak.
+pub fn open_android(app: &adw::Application, package: &str) {
+    open(app, Vec::new());
+    CURRENT.with(|current| {
+        if let Some(st) = current.borrow().clone() {
+            show_page(&st, "android");
+            if let Err(e) = waydroid::launch(package) {
+                st.toast(&format!(
+                    "{}: {e}",
+                    t(
+                        "Не удалось запустить Android-приложение",
+                        "Failed to launch the Android app"
+                    )
+                ));
+            }
+        }
+    });
+}
+
+fn show_page(st: &Shared, id: &str) {
+    st.stack.set_visible_child_name(id);
+    let mut index = 0;
+    while let Some(row) = st.sidebar.row_at_index(index) {
+        if row.widget_name() == id {
+            st.sidebar.select_row(Some(&row));
+            break;
+        }
+        index += 1;
+    }
+}
+
 fn launch_by_name(st: &Shared, name: &str) {
     let (app, prefix) = {
         let cfg = st.config.borrow();
@@ -287,6 +325,7 @@ fn page_title(id: &str) -> &'static str {
     match id {
         "deb" => t("Пакеты .deb", ".deb packages"),
         "flatpak" => t("Пакеты .flatpak", ".flatpak packages"),
+        "android" => t("Android-приложения", "Android apps"),
         "settings" => t("Настройки", "Settings"),
         _ => t("Префиксы", "Prefixes"),
     }
@@ -364,6 +403,19 @@ fn fill_window(
     flatpak_page.add(&flatpak_zone_group);
     flatpak_page.add(&flatpak_group);
 
+    // ---- Страница: OpenRun Android ----
+    let android_zone = drop_zone(Some(t("Перетащите .apk", "Drop .apk here")));
+    let android_zone_group = adw::PreferencesGroup::new();
+    android_zone_group.add(&android_zone);
+
+    let android_group = adw::PreferencesGroup::builder()
+        .title(t("Android-приложения", "Android apps"))
+        .build();
+
+    let android_page = adw::PreferencesPage::new();
+    android_page.add(&android_zone_group);
+    android_page.add(&android_group);
+
     // ---- Страница: настройки ----
     let theme_row = adw::ActionRow::builder().title(t("Тема", "Theme")).build();
     let theme_dd = gtk::DropDown::from_strings(&[
@@ -433,6 +485,11 @@ fn fill_window(
         Some("flatpak"),
         t("Пакеты .flatpak", ".flatpak packages"),
     );
+    stack.add_titled(
+        &android_page,
+        Some("android"),
+        t("Android-приложения", "Android apps"),
+    );
     stack.add_titled(&settings_page, Some("settings"), t("Настройки", "Settings"));
 
     // ---- Боковая панель (компактная, как в Files) ----
@@ -454,6 +511,11 @@ fn fill_window(
             "flatpak",
             t("Пакеты .flatpak", ".flatpak packages"),
             "package-x-generic-symbolic",
+        )),
+        sidebar_row((
+            "android",
+            t("Android-приложения", "Android apps"),
+            "phone-symbolic",
         )),
         sidebar_row((
             "settings",
@@ -535,12 +597,17 @@ fn fill_window(
         app_group,
         app_rows: RefCell::new(Vec::new()),
         stack: stack.clone(),
+        sidebar: list.clone(),
         deb_group,
         deb_rows: RefCell::new(Vec::new()),
         flatpak_group,
         flatpak_rows: RefCell::new(Vec::new()),
+        android_group,
+        android_rows: RefCell::new(Vec::new()),
         runtime_toast: RefCell::new(None),
         runtime_busy: Cell::new(false),
+        android_toast: RefCell::new(None),
+        android_busy: Cell::new(false),
     });
 
     // .exe/.msi: клик по «+» и перетаскивание как на саму зону, так и на всю страницу префиксов
@@ -592,6 +659,25 @@ fn fill_window(
     let st = state.clone();
     attach_drop(&flatpak_page, &flatpak_zone, move |paths| {
         handle_flatpak_paths(&st, paths)
+    });
+
+    // .apk: установка Android-приложения через OpenRun Android.
+    let st = state.clone();
+    android_zone.connect_clicked(move |_| {
+        choose_file(
+            &st,
+            t(
+                "Выберите Android-приложение",
+                "Choose an Android application",
+            ),
+            t("Android-приложения (.apk)", "Android applications (.apk)"),
+            &["apk"],
+            |st, path| handle_apk_paths(st, vec![path]),
+        );
+    });
+    let st = state.clone();
+    attach_drop(&android_page, &android_zone, move |paths| {
+        handle_apk_paths(&st, paths)
     });
 
     let st = state.clone();
@@ -662,6 +748,7 @@ fn fill_window(
     refresh_apps(&state);
     refresh_deb_list(&state);
     refresh_flatpak_list(&state);
+    refresh_android_list(&state);
 
     // При первом запуске OpenRun скачивается сам — ничего не нужно ставить в систему.
     if first_run && !runtime::is_bundled_ready() {
@@ -707,21 +794,24 @@ fn has_ext(path: &Path, exts: &[&str]) -> bool {
 fn handle_paths(st: &Shared, paths: Vec<PathBuf>) {
     let mut debs = Vec::new();
     let mut flatpaks = Vec::new();
+    let mut apks = Vec::new();
     let mut windows = Vec::new();
     for path in paths {
         if has_ext(&path, &["deb"]) {
             debs.push(path);
         } else if has_ext(&path, &["flatpak"]) {
             flatpaks.push(path);
+        } else if has_ext(&path, &["apk"]) {
+            apks.push(path);
         } else if has_ext(&path, &["exe", "msi"]) {
             windows.push(path);
         }
     }
 
-    if debs.is_empty() && flatpaks.is_empty() && windows.is_empty() {
+    if debs.is_empty() && flatpaks.is_empty() && apks.is_empty() && windows.is_empty() {
         st.toast(t(
-            "Откройте файл .exe, .msi, .deb или .flatpak",
-            "Open an .exe, .msi, .deb, or .flatpak file",
+            "Откройте файл .exe, .msi, .deb, .flatpak или .apk",
+            "Open an .exe, .msi, .deb, .flatpak, or .apk file",
         ));
         return;
     }
@@ -730,6 +820,9 @@ fn handle_paths(st: &Shared, paths: Vec<PathBuf>) {
     }
     if !flatpaks.is_empty() {
         handle_flatpak_paths(st, flatpaks);
+    }
+    if !apks.is_empty() {
+        handle_apk_paths(st, apks);
     }
     if !windows.is_empty() {
         handle_exe_paths(st, windows);
@@ -1359,6 +1452,360 @@ fn handle_flatpak_paths(st: &Shared, paths: Vec<PathBuf>) {
             Err(e) => st.toast(&format!(
                 "{}: {e}",
                 t("Ошибка установки Flatpak", "Flatpak installation failed")
+            )),
+        },
+    );
+}
+
+// ---------- .apk / OpenRun Android ----------
+
+fn session_text(session: waydroid::Session) -> &'static str {
+    match session {
+        waydroid::Session::Running => t("запущен", "running"),
+        waydroid::Session::Stopped => t("остановлен", "stopped"),
+        waydroid::Session::Unknown => t("неизвестно", "unknown"),
+    }
+}
+
+fn refresh_android_list(st: &Shared) {
+    let old: Vec<adw::ActionRow> = st.android_rows.borrow_mut().drain(..).collect();
+    for row in &old {
+        st.android_group.remove(row);
+    }
+
+    let available = waydroid::available();
+    refresh_android_status(st, available);
+    add_android_download_banner(st, available);
+}
+
+fn refresh_android_status(st: &Shared, available: bool) {
+    if !available {
+        if !waydroid::runtime_downloaded() {
+            return;
+        }
+        let row = adw::ActionRow::builder()
+            .title(t("OpenRun Android скачан", "OpenRun Android is downloaded"))
+            .subtitle(t(
+                "Скачанный Android-рантайм ещё не установлен в системе",
+                "The downloaded Android runtime is not installed on the system yet",
+            ))
+            .build();
+        st.android_group.add(&row);
+        st.android_rows.borrow_mut().push(row);
+        return;
+    }
+
+    let status = waydroid::status();
+    let running = status
+        .as_ref()
+        .map(|status| status.running())
+        .unwrap_or(false);
+    let subtitle = match &status {
+        Ok(status) => format!(
+            "{}: {} · {}: {}",
+            t("Сессия", "Session"),
+            session_text(status.session),
+            t("Контейнер", "Container"),
+            session_text(status.container)
+        ),
+        Err(e) => format!("{}: {e}", t("Статус недоступен", "Status unavailable")),
+    };
+
+    let status_row = adw::ActionRow::builder()
+        .title("OpenRun Android")
+        .subtitle(subtitle.as_str())
+        .build();
+
+    let refresh_btn = icon_button("view-refresh-symbolic", t("Обновить", "Refresh"));
+    let st_refresh = st.clone();
+    refresh_btn.connect_clicked(move |_| refresh_android_list(&st_refresh));
+    status_row.add_suffix(&refresh_btn);
+
+    if !running {
+        let start_btn = gtk::Button::with_label(t("Запустить Android", "Start Android"));
+        start_btn.add_css_class("flat");
+        start_btn.add_css_class("compact-button");
+        let st_start = st.clone();
+        start_btn.connect_clicked(move |_| match waydroid::start_session() {
+            Ok(()) => st_start.toast(t(
+                "Запускаю Android… Нажмите «Обновить» через несколько секунд",
+                "Starting Android… Press Refresh in a few seconds",
+            )),
+            Err(e) => st_start.toast(&format!(
+                "{}: {e}",
+                t("Не удалось запустить Android", "Failed to start Android")
+            )),
+        });
+        status_row.add_suffix(&start_btn);
+    }
+
+    let ui_btn = gtk::Button::with_label(t("Открыть Android", "Open Android"));
+    ui_btn.add_css_class("flat");
+    ui_btn.add_css_class("compact-button");
+    let st_ui = st.clone();
+    ui_btn.connect_clicked(move |_| {
+        if let Err(e) = waydroid::show_full_ui() {
+            st_ui.toast(&format!(
+                "{}: {e}",
+                t("Не удалось открыть Android", "Failed to open Android")
+            ));
+        }
+    });
+    status_row.add_suffix(&ui_btn);
+
+    st.android_group.add(&status_row);
+    st.android_rows.borrow_mut().push(status_row);
+
+    if !running {
+        return;
+    }
+
+    match waydroid::list_apps() {
+        Ok(apps) if apps.is_empty() => {
+            let row = adw::ActionRow::builder()
+                .title(t(
+                    "Android-приложений пока нет",
+                    "No Android applications yet",
+                ))
+                .subtitle(t(
+                    "Перетащите .apk в эту страницу",
+                    "Drop an .apk onto this page",
+                ))
+                .build();
+            st.android_group.add(&row);
+            st.android_rows.borrow_mut().push(row);
+        }
+        Ok(apps) => {
+            for app in apps {
+                let row = adw::ActionRow::builder()
+                    .title(app.name.as_str())
+                    .subtitle(app.package.as_str())
+                    .build();
+
+                let run_btn = icon_button(
+                    "media-playback-start-symbolic",
+                    t("Запустить Android-приложение", "Launch Android app"),
+                );
+                let st_run = st.clone();
+                let package = app.package.clone();
+                run_btn.connect_clicked(move |_| {
+                    if let Err(e) = waydroid::launch(&package) {
+                        st_run.toast(&format!(
+                            "{}: {e}",
+                            t("Не удалось запустить", "Failed to launch")
+                        ));
+                    }
+                });
+
+                let link_btn = icon_button(
+                    "bookmark-new-symbolic",
+                    t("Создать ярлык", "Create shortcut"),
+                );
+                let st_link = st.clone();
+                let package = app.package.clone();
+                let name = app.name.clone();
+                link_btn.connect_clicked(move |_| {
+                    match shortcut::create_waydroid_shortcut(&package, &name) {
+                        Ok(path) => st_link.toast(&format!(
+                            "{}: {}",
+                            t("Ярлык создан", "Shortcut created"),
+                            path.display()
+                        )),
+                        Err(e) => st_link.toast(&format!(
+                            "{}: {e}",
+                            t("Не удалось создать ярлык", "Failed to create shortcut")
+                        )),
+                    }
+                });
+
+                let del_btn = icon_button(
+                    "user-trash-symbolic",
+                    t("Удалить Android-приложение", "Remove Android app"),
+                );
+                let st_del = st.clone();
+                let package = app.package.clone();
+                del_btn.connect_clicked(move |_| match waydroid::remove(&package) {
+                    Ok(()) => {
+                        shortcut::remove_waydroid_shortcut(&package);
+                        st_del.toast(&format!("{}: {}", t("Удалено", "Removed"), package));
+                        refresh_android_list(&st_del);
+                    }
+                    Err(e) => {
+                        st_del.toast(&format!("{}: {e}", t("Ошибка удаления", "Removal failed")))
+                    }
+                });
+
+                row.add_suffix(&run_btn);
+                row.add_suffix(&link_btn);
+                row.add_suffix(&del_btn);
+                st.android_group.add(&row);
+                st.android_rows.borrow_mut().push(row);
+            }
+        }
+        Err(e) => {
+            let subtitle = format!("{e}");
+            let row = adw::ActionRow::builder()
+                .title(t(
+                    "Не удалось получить список",
+                    "Could not get the application list",
+                ))
+                .subtitle(subtitle.as_str())
+                .build();
+            st.android_group.add(&row);
+            st.android_rows.borrow_mut().push(row);
+        }
+    }
+}
+
+fn add_android_download_banner(st: &Shared, available: bool) {
+    if available || waydroid::runtime_downloaded() {
+        return;
+    }
+
+    let row = adw::ActionRow::builder()
+        .title(t(
+            "OpenRun Android не скачан!",
+            "OpenRun Android is not downloaded!",
+        ))
+        .subtitle(t(
+            "Скачайте встроенный Android-рантайм (около 1.1 ГБ)",
+            "Download the built-in Android runtime (about 1.1 GB)",
+        ))
+        .build();
+    row.add_css_class("warning");
+
+    let button = gtk::Button::with_label(t("Скачать", "Download"));
+    button.add_css_class("suggested-action");
+    button.add_css_class("compact-button");
+    let st_button = st.clone();
+    button.connect_clicked(move |_| start_android_download(&st_button));
+
+    row.add_suffix(&button);
+    st.android_group.add(&row);
+    st.android_rows.borrow_mut().push(row);
+}
+
+enum AndroidMsg {
+    Progress(waydroid::Progress),
+    Finished(Option<String>),
+}
+
+fn set_android_toast(st: &Shared, text: &str) {
+    if let Some(toast) = st.android_toast.borrow().as_ref() {
+        toast.set_title(text);
+    }
+}
+
+fn start_android_download(st: &Shared) {
+    if st.android_busy.get() {
+        return;
+    }
+    st.android_busy.set(true);
+
+    let toast = adw::Toast::new(t(
+        "Скачиваю OpenRun Android…",
+        "Downloading OpenRun Android…",
+    ));
+    toast.set_timeout(0);
+    st.toasts.add_toast(toast.clone());
+    st.android_toast.replace(Some(toast));
+
+    let (tx, rx) = async_channel::unbounded::<AndroidMsg>();
+    std::thread::spawn(move || {
+        let sender = tx.clone();
+        let mut progress = move |p| {
+            let _ = sender.send_blocking(AndroidMsg::Progress(p));
+        };
+        let result = waydroid::download_runtime(&mut progress);
+        drop(progress);
+        let _ = tx.send_blocking(AndroidMsg::Finished(result.err().map(|e| format!("{e}"))));
+    });
+
+    let st = st.clone();
+    glib::spawn_future_local(async move {
+        while let Ok(msg) = rx.recv().await {
+            match msg {
+                AndroidMsg::Progress(waydroid::Progress::Status(text)) => {
+                    set_android_toast(&st, &text);
+                }
+                AndroidMsg::Progress(waydroid::Progress::Download { file, done, total }) => {
+                    let text = if total > 0 {
+                        format!(
+                            "{} {} · {:.0}%",
+                            t("Скачиваю", "Downloading"),
+                            file,
+                            done as f64 / total as f64 * 100.0
+                        )
+                    } else {
+                        format!("{} {}…", t("Скачиваю", "Downloading"), file)
+                    };
+                    set_android_toast(&st, &text);
+                }
+                AndroidMsg::Finished(Some(err)) => {
+                    if let Some(toast) = st.android_toast.borrow().as_ref() {
+                        toast.set_title(&format!(
+                            "{}: {err}",
+                            t(
+                                "Не удалось скачать OpenRun Android",
+                                "Failed to download OpenRun Android"
+                            )
+                        ));
+                        toast.set_timeout(6);
+                    }
+                    refresh_android_list(&st);
+                }
+                AndroidMsg::Finished(None) => {
+                    if let Some(toast) = st.android_toast.borrow().as_ref() {
+                        toast.set_title(t(
+                            "OpenRun Android скачан",
+                            "OpenRun Android is downloaded",
+                        ));
+                        toast.set_timeout(4);
+                    }
+                    refresh_android_list(&st);
+                }
+            }
+        }
+
+        st.android_busy.set(false);
+        st.android_toast.replace(None);
+    });
+}
+
+fn handle_apk_paths(st: &Shared, paths: Vec<PathBuf>) {
+    let apks: Vec<PathBuf> = paths.into_iter().filter(|p| has_ext(p, &["apk"])).collect();
+    if apks.is_empty() {
+        st.toast(t("Нужен файл .apk", "An .apk file is required"));
+        return;
+    }
+
+    show_page(st, "android");
+    st.toast(t(
+        "Устанавливаю Android-приложение…",
+        "Installing Android application…",
+    ));
+
+    run_background(
+        st,
+        move || {
+            let mut installed = 0;
+            for path in &apks {
+                waydroid::install_file(path)?;
+                installed += 1;
+            }
+            Ok(installed)
+        },
+        |st, result| match result {
+            Ok(count) => {
+                st.toast(&format!(
+                    "{}: {count}",
+                    t("Установлено APK", "APKs installed")
+                ));
+                refresh_android_list(st);
+            }
+            Err(e) => st.toast(&format!(
+                "{}: {e}",
+                t("Ошибка установки APK", "APK installation failed")
             )),
         },
     );

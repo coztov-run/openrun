@@ -23,3 +23,4 @@ pub mod prefix;
 pub mod runner;
 pub mod runtime;
 pub mod shortcut;
+pub mod waydroid;

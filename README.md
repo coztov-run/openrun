@@ -13,9 +13,20 @@ GNOME. Собственный Wine-рантайм скачивается при 
 
 ![Окно OpenRun](data/screenshots/openrun-main.png)
 
+### Категории
+
+<p align="center">
+  <img src="data/screenshots/openrun-prefixes.png" width="48%" alt="Префиксы">
+  <img src="data/screenshots/openrun-deb.png" width="48%" alt="Пакеты .deb">
+</p>
+<p align="center">
+  <img src="data/screenshots/openrun-flatpak.png" width="48%" alt="Пакеты .flatpak">
+  <img src="data/screenshots/openrun-android.png" width="48%" alt="Android-приложения">
+</p>
+
 ## Что умеет
 
-Двойной клик по `.exe`, `.msi`, `.deb` или `.flatpak` — и OpenRun сам
+Двойной клик по `.exe`, `.msi`, `.deb`, `.flatpak` или `.apk` — и OpenRun сам
 открывает файл, создаёт префикс, если его ещё нет, запускает или устанавливает
 программу и добавляет ярлык. Предварительно запускать OpenRun не надо.
 
@@ -37,6 +48,17 @@ Arch, CachyOS, Debian, Ubuntu, Pop!_OS и других дистрибутива�
 установку. OpenRun запоминает, что установил, и делает ярлык с запуском
 `flatpak run <id>`. Управлять такими приложениями можно на отдельной странице
 «Пакеты .flatpak»: запустить, удалить или перетащить новый бандл.
+
+### Android-приложения
+
+Для `.apk` используется Android-рантайм OpenRun. На странице
+«Android-приложения» можно поставить APK, запустить его, удалить или создать
+ярлык. Если рантайм ещё не скачан, внизу страницы есть плашка
+«OpenRun Android не скачан!» с кнопкой «Скачать»: она загружает AppImage и
+системные образы (около 1.1 ГБ) в `~/.local/share/openrun/android`.
+Рантайм должен быть запущен; нужен Wayland и поддержка `binder` в ядре.
+Техническая деталь: сейчас рантайм собран на Waydroid, поэтому системный
+компонент нужно один раз установить. Отдельный Wine или Android SDK не нужен.
 
 В настройках есть тема (системная, светлая, тёмная), язык (русский или
 английский) и кнопка «Обновить» — она пересоздаёт ярлыки и кеш значков, если
@@ -101,8 +123,8 @@ CachyOS, Fedora 41+, Ubuntu 24.10+ и новее. На старых систем
 
 Установщик кладёт бинарник в `~/.local/bin`, ярлык — в
 `~/.local/share/applications`, иконку — в тему, а также прописывает OpenRun
-обработчиком `.exe`, `.msi`, `.deb` и `.flatpak`. Старые ассоциации остаются
-как запасной вариант.
+обработчиком `.exe`, `.msi`, `.deb`, `.flatpak` и `.apk`. Старые ассоциации
+остаются как запасной вариант.
 
 Удалить:
 
@@ -135,11 +157,13 @@ OpenRun регистрирует такие MIME-типы:
 - `application/vnd.debian.binary-package`
 - `application/vnd.flatpak`
 - `application/x-flatpak`
+- `application/vnd.android.package-archive`
 
 Для `.exe` и `.msi` появляется ярлык
 `~/.local/share/applications/openrun-app-*.desktop` и копия на рабочем столе.
 Для `.deb` — ярлыки вида `openrun-<пакет>-*.desktop`. Для `.flatpak` —
-`openrun-flatpak-<id>.desktop`.
+`openrun-flatpak-<id>.desktop`. Для Android-приложений — `openrun-android-<package>.desktop`.
+Они запускают OpenRun с `--launch-android`.
 
 Если ярлык или иконка не появились, откройте «Настройки» → «Ярлыки и кеш
 значков» → «Обновить». Это быстрее, чем искать причину в логах.

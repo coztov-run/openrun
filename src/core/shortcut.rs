@@ -31,9 +31,10 @@ const MIME_TYPES: &[&str] = &[
     "application/vnd.debian.binary-package",
     "application/vnd.flatpak",
     "application/x-flatpak",
+    "application/vnd.android.package-archive",
 ];
 
-const MIME_LIST: &str = "application/x-msdownload;application/x-ms-dos-executable;application/vnd.microsoft.portable-executable;application/x-msi;application/vnd.debian.binary-package;application/vnd.flatpak;application/x-flatpak;";
+const MIME_LIST: &str = "application/x-msdownload;application/x-ms-dos-executable;application/vnd.microsoft.portable-executable;application/x-msi;application/vnd.debian.binary-package;application/vnd.flatpak;application/x-flatpak;application/vnd.android.package-archive;";
 
 fn data_dir() -> PathBuf {
     dirs::data_dir().unwrap_or_else(|| PathBuf::from("."))
@@ -495,6 +496,46 @@ pub fn remove_flatpak_shortcut(id: &str) {
     remove_launcher(&flatpak_launcher_name(id));
 }
 
+fn waydroid_launcher_name(package: &str) -> String {
+    format!("openrun-android-{}.desktop", slug(package))
+}
+
+/// Создаёт ярлык для Android-приложения, запускаемого через OpenRun Android.
+pub fn create_waydroid_shortcut(package: &str, name: &str) -> Result<PathBuf> {
+    let exec = if in_flatpak() {
+        format!(
+            "flatpak run {} --launch-android {}",
+            crate::APP_ID,
+            quote(package)
+        )
+    } else {
+        let exe = std::env::current_exe().context("не удалось определить путь к приложению")?;
+        let exe = fs::canonicalize(&exe).unwrap_or(exe);
+        format!(
+            "{} --launch-android {}",
+            quote(&exe.display().to_string()),
+            quote(package)
+        )
+    };
+    let content = format!(
+        "[Desktop Entry]\n\
+         Type=Application\n\
+         Version=1.0\n\
+         Name={name}\n\
+         Comment={}\n\
+         Exec={exec}\n\
+         Icon=application-x-executable\n\
+         Terminal=false\n\
+         Categories=Utility;\n",
+        t("Android-приложение OpenRun", "Android app for OpenRun"),
+    );
+    write_launcher(&waydroid_launcher_name(package), &content)
+}
+
+pub fn remove_waydroid_shortcut(package: &str) {
+    remove_launcher(&waydroid_launcher_name(package));
+}
+
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeMap;
@@ -509,6 +550,7 @@ mod tests {
         assert!(out.contains("application/x-msi=openrun.desktop;"));
         assert!(out.contains("application/vnd.debian.binary-package=openrun.desktop;"));
         assert!(out.contains("application/vnd.flatpak=openrun.desktop;"));
+        assert!(out.contains("application/vnd.android.package-archive=openrun.desktop;"));
     }
 
     #[test]
